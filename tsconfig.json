@@ -10,8 +10,5 @@
 		"sourceMap": true,
 		"module": "ESNext",
 		"moduleResolution": "Node",
-		"paths": {
-			"$lib/*": ["./src/lib/*"]
-		}
 	}
 }
