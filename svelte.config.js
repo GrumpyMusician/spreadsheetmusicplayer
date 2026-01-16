@@ -7,12 +7,7 @@ const config = {
 	// for more information about preprocessors
 	preprocess: vitePreprocess(),
 
-	kit: {
-		adapter: adapter(),
-		alias: {
-			$lib: path.resolve('./src/lib')
-		}
-	}
+	kit: { adapter: adapter() }
 };
 
 export default config;

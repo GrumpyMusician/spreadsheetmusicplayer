@@ -15,13 +15,25 @@ export class youtubePlayer {
                 width: '100%',
                 playerVars: {
                     playsinline: 1,
-                    controls: 0
+                    controls: 0,
+                },
+                events: {
+                    'onReady': self.onPlayerReady
                 }
             });
         };
     }
 
-    playVideo(videoURL){
+    onPlayerReady(event) {
+        player.setVolume(100);
+        setTimeout(() => {
+            event.target.playVideo();
+        }, 100);
+        setInterval(clock, 100);
+    }
+
+
+    loadVideo(videoURL){
         this.player.loadVideoByUrl(videoURL, 0);
     }
 

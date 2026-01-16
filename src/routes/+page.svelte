@@ -26,7 +26,7 @@
                 <div class = "grid grid-cols-[0px_1fr]">
                     <div class = "text-xs ml-0.5 mt-1.5">00:00/00:00</div>
                     <div class = "text-center text-xs mt-1.5">Untitled</div>
-                    <input type="range" min="0" max="100" value="100" class="mt-1 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[330.5%] rotate-180 transform translate-x-[30.05%] border-base-200 bg-linear-to-r from-red-500 to-orange-400 [--range-p:0rem] col-span-2"/>
+                    <input type="range" min="0" max="100" value="100" class="mt-1 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[330.5%] rotate-180 transform translate-x-[30.05%] bg-linear-to-r from-red-500 to-orange-400 [--range-p:0rem] col-span-2"/>
                 </div>
                 <div>
                     <button class="btn"><span id = "toggleableVolume" class="material-symbols-outlined">volume_up</span></button>
