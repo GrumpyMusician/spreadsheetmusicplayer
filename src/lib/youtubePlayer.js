@@ -16,22 +16,10 @@ export class youtubePlayer {
                 playerVars: {
                     playsinline: 1,
                     controls: 0,
-                },
-                events: {
-                    'onReady': self.onPlayerReady
                 }
             });
         };
     }
-
-    onPlayerReady(event) {
-        player.setVolume(100);
-        setTimeout(() => {
-            event.target.playVideo();
-        }, 100);
-        setInterval(clock, 100);
-    }
-
 
     loadVideo(videoURL){
         this.player.loadVideoByUrl(videoURL, 0);
