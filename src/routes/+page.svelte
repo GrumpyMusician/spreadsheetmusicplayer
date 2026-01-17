@@ -6,23 +6,51 @@
     player = new youtubePlayer("player", "vxXEkw8KsQU");
     
     let intervalId;
+    let progressbarValue = 0;
+    let ignoreTime = false;
+    let soundBarValue = 0;
+    let ignoreSound = false;
+
+    let volumeIcon = "volume_up"
     setTimeout(() => {
         player.playVideo();
         player.setVolume(100);
 
         intervalId = setInterval(() => {
-            timeElapsed = player.getCurrentTime();
             timeTotal = player.getDuration();
+            if (ignoreTime){
+                timeElapsed = timeTotal - progressbarValue;
+            } else {
+                timeElapsed = player.getCurrentTime();
+                progressbarValue = timeTotal - timeElapsed;
+            }
             playerState = player.getPlayerState();
-            volume = player.getVolume();
+            if (ignoreSound){
+                volume = 100 - soundBarValue;
+            } else {
+                volume = player.getVolume();
+                soundBarValue = 100 - volume;
+            }
 
+            if (volume === 0){
+                volumeIcon = "volume_off"
+            } else if (volume <= 33) {
+                volumeIcon = "volume_mute"
+            } else if (volume <= 66) {
+                volumeIcon = "volume_down"
+            } else {
+                volumeIcon = "volume_up"
+            }
+
+            player.setVolume(volume);
+            
             if (playerState === 1 && playPauseIcon === "play_arrow"){
                 playPauseToggle(false);
             } else if (playerState === 2 && playPauseIcon === "pause"){
                 playPauseToggle(false);
             }
         }, 50);
-    }, 1500);
+    }, 2000);
 
     let timeElapsed = 0;
     let timeTotal = 0;
@@ -56,7 +84,25 @@
         }
     }
 
-    let titleComposerYear = "Brandenburg Concerto No. 3 in G major · Johann Sebastian Bach · 1719"
+    let csvData: string[][] = [];
+    function loadCSV(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        if (!input.files || input.files.length === 0) return;
+
+        const file: File = input.files[0];
+        const reader = new FileReader();
+
+        reader.onload = () => {
+            const text = reader.result as string;
+
+            csvData = text.trim().split(/\r?\n/).map(row => row.split(',').map(cell => cell.trim()));
+
+            console.log(csvData); // 2D array
+        };
+
+        reader.readAsText(file);
+    }
+    
 </script>
 <title>SpreadsheetPlayer</title>
 
@@ -76,21 +122,32 @@
     <div class="card bg-base-200 card-md shadow-sm col-span-2">
         <div class="card-body grid grid-cols-[242px_1fr_242px] gap-5 p-5">
             <div>
-                <button class="btn"><span class="material-symbols-outlined">skip_previous</span></button>
+                <div class="tooltip" data-tip="Previous Song"><button class="btn"><span class="material-symbols-outlined">skip_previous</span></button></div>
                 <button class="btn" on:click={() => {playPauseToggle(true)}}><span class="material-symbols-outlined">{playPauseIcon}</span></button>
                 <button class="btn"><span class="material-symbols-outlined">skip_next</span></button>
                 <button class="btn"><span class="material-symbols-outlined">repeat</span></button>
             </div>
             <div class = "grid grid-cols-[0px_1fr]">
                 <div class = "text-xs ml-0.5 mt-1.5">{secondsToTime(timeElapsed)}/{secondsToTime(timeTotal)}</div>
-                <div class = "text-center text-xs mt-1.5">{titleComposerYear}</div>
-                <input type="range" min="0" max={timeTotal} value={timeTotal-timeElapsed} class="mt-1 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[330.5%] rotate-180 transform translate-x-[30.05%] bg-linear-to-r from-red-500 to-orange-400 [--range-p:0rem] col-span-2"/>
+                <div class = "text-center text-xs mt-1.5">{"Brandenburg Concerto No. 3 in G major · Johann Sebastian Bach · 1719"}</div>
+                <input type="range" min="0" max={timeTotal} bind:value={progressbarValue} on:mouseup={() => {ignoreTime = false; player.seekTo(timeElapsed);}} on:mousedown={() => {ignoreTime = true}} class="mt-1 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[330.5%] rotate-180 transform translate-x-[30.05%] bg-linear-to-r from-red-500 to-orange-400 [--range-p:0rem] col-span-2"/>
             </div>
             <div>
-                <button class="btn"><span id = "toggleableVolume" class="material-symbols-outlined">volume_up</span></button>
-                <button class="btn"><span id = "toggleableRepeat" class="material-symbols-outlined">switch_access_2</span></button>
-                <button class="btn"><span class="material-symbols-outlined">upload</span></button>
+                <div class="dropdown dropdown-top dropdown-center">
+                    <div tabindex="0" role="button" class="btn"><span id = "toggleableVolume" class="material-symbols-outlined">{volumeIcon}</span></div>
+                    <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 shadow-sm mb-2.5">
+                        <li class = "text-center w-full">{volume}%</li>
+                        <input type="range" bind:value={soundBarValue} on:mouseup={() => {ignoreSound = false;}} on:mousedown={() => {ignoreSound = true}} class="m-1 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[318%] rotate-180 transform translate-x-[30.05%] bg-linear-to-r from-green-500 to-blue-500 [--range-p:0rem]"/>
+                    </ul>
+                </div>
+                <button class="btn"><span id = "toggleableRepeat" class="material-symbols-outlined">swap_horiz</span></button>
                 <button class="btn"><span id = "toggleableVisibility" class="material-symbols-outlined">visibility</span></button>
+                <button class="btn">
+                    <input id="csvInput" type="file" class = "hidden" accept=".csv" on:change = {loadCSV}/>
+                    <label for="csvInput" class="upload-label">
+                        <span class="material-symbols-outlined">upload</span>
+                    </label>
+                </button>
             </div>
         </div>
     </div>

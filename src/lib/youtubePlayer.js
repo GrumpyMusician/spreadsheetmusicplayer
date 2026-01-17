@@ -46,18 +46,18 @@ export class youtubePlayer {
     }
 
     getVolume(){
-        return this.player.getVolume();
+        return Math.floor(this.player.getVolume());
     }
 
     getPlayerState(){
-        return this.player.getPlayerState();
+        return Math.floor(this.player.getPlayerState());
     }
 
     getCurrentTime(){
-        return this.player.getCurrentTime();
+        return Math.floor(this.player.getCurrentTime());
     }
 
     getDuration(){
-        return this.player.getDuration();
+        return Math.ceil(this.player.getDuration()) - 1;
     }
 }
