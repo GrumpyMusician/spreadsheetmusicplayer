@@ -20,10 +20,12 @@
             timeTotal = player.getDuration();
             if (ignoreTime){
                 timeElapsed = timeTotal - progressbarValue;
+                player.seekTo(timeElapsed);
             } else {
                 timeElapsed = player.getCurrentTime();
                 progressbarValue = timeTotal - timeElapsed;
             }
+
             playerState = player.getPlayerState();
             if (ignoreSound){
                 volume = 100 - soundBarValue;
@@ -116,6 +118,22 @@
     <div class="card bg-base-200 card-md shadow-sm">
         <div class="card-body">
             <h2 class="card-title">Music</h2>
+            <div class="w-full h-full bg-amber-800 overflow-y-scroll scroll-auto">
+                <p>...</p>
+                <p>...</p><p>...</p>
+                <p>...</p><p>...</p>
+                 <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p>
+                <p>...</p>
+            </div>
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend">Sort by...</legend>
+                <select class="select select-xs w-[25%]">
+                    <option selected>Default</option>
+                    <option>Name</option>
+                    <option>Author</option>
+                    <option>Date</option>
+                </select>                    
+            </fieldset>
         </div>
     </div>
 
@@ -128,16 +146,16 @@
                 <button class="btn"><span class="material-symbols-outlined">repeat</span></button>
             </div>
             <div class = "grid grid-cols-[0px_1fr]">
-                <div class = "text-xs ml-0.5 mt-1.5">{secondsToTime(timeElapsed)}/{secondsToTime(timeTotal)}</div>
-                <div class = "text-center text-xs mt-1.5">{"Brandenburg Concerto No. 3 in G major · Johann Sebastian Bach · 1719"}</div>
-                <input type="range" min="0" max={timeTotal} bind:value={progressbarValue} on:mouseup={() => {ignoreTime = false; player.seekTo(timeElapsed);}} on:mousedown={() => {ignoreTime = true}} class="mt-1 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[330.5%] rotate-180 transform translate-x-[30.05%] bg-linear-to-r from-red-500 to-orange-400 [--range-p:0rem] col-span-2"/>
+                <div class = "text-xs ml-0.5 mt-1">{secondsToTime(timeElapsed)}/{secondsToTime(timeTotal)}</div>
+                <div class = "text-center text-xs mt-1">{"Brandenburg Concerto No. 3 in G major · Johann Sebastian Bach · 1719"}</div>
+                <input type="range" min="0" max={timeTotal} bind:value={progressbarValue} on:mouseup={() => {ignoreTime = false}} on:mousedown={() => {ignoreTime = true}} class="mt-0.5 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[330.5%] rotate-180 transform translate-x-[30.05%] bg-linear-to-r from-red-500 to-orange-400 [--range-p:0rem] col-span-2"/>
             </div>
             <div>
                 <div class="dropdown dropdown-top dropdown-center">
                     <div tabindex="0" role="button" class="btn"><span id = "toggleableVolume" class="material-symbols-outlined">{volumeIcon}</span></div>
-                    <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 shadow-sm mb-2.5">
+                    <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 shadow-sm mb-2.5 p-3">
                         <li class = "text-center w-full">{volume}%</li>
-                        <input type="range" bind:value={soundBarValue} on:mouseup={() => {ignoreSound = false;}} on:mousedown={() => {ignoreSound = true}} class="m-1 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[318%] rotate-180 transform translate-x-[30.05%] bg-linear-to-r from-green-500 to-blue-500 [--range-p:0rem]"/>
+                        <input type="range" bind:value={soundBarValue} on:mouseup={() => {ignoreSound = false}} on:mousedown={() => {ignoreSound = true}} class="m-1 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[318%] rotate-180 transform translate-x-[30.05%] bg-linear-to-r from-green-500 to-blue-500 [--range-p:0rem]"/>
                     </ul>
                 </div>
                 <button class="btn"><span id = "toggleableRepeat" class="material-symbols-outlined">swap_horiz</span></button>
