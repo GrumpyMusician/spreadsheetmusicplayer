@@ -75,6 +75,30 @@
         }
     }
 
+    function toYoutubeId(url: string) {
+        try {
+            const parsed = new URL(url);
+
+            if (parsed.hostname === "youtu.be") {
+                return parsed.pathname.slice(1);
+            }
+
+            if (parsed.searchParams.has("v")) {
+                return parsed.searchParams.get("v");
+            }
+
+            const pathMatch = parsed.pathname.match(/\/(embed|shorts)\/([^/?]+)/);
+            if (pathMatch) {
+                return pathMatch[2];
+            }
+
+            return null;
+        } catch {
+            return null;
+        }
+    }
+
+
     let playPauseIcon = "play_arrow"
     function playPauseToggle(isManual:boolean){
         if (playPauseIcon === "play_arrow"){
@@ -87,6 +111,7 @@
     }
 
     let csvData: string[][] = [];
+    let csvHeader: string[] = [];
     function loadCSV(event: Event): void {
         const input = event.target as HTMLInputElement;
         if (!input.files || input.files.length === 0) return;
@@ -97,14 +122,43 @@
         reader.onload = () => {
             const text = reader.result as string;
 
-            csvData = text.trim().split(/\r?\n/).map(row => row.split(',').map(cell => cell.trim()));
+            const rows = text
+                .trim()
+                .split(/\r?\n/)
+                .map(row => row.split(',').map(cell => cell.trim()));
 
-            console.log(csvData); // 2D array
+            csvHeader = rows[0];
+            csvData = rows.slice(1);
+
+            musicIndex = 0;
+            mainIndex = 0;
+            altIndex = 0;
         };
 
         reader.readAsText(file);
     }
-    
+
+    let musicIndex = 0;
+    let mainIndex = 0;
+    let altIndex = 0;
+
+    let workingData: string[][] = [];
+    function nextSong(): void {
+        let lengthMainIndex = workingData[musicIndex][csvHeader.indexOf("Links")].length - 1;
+        let lengthAltIndex = workingData[musicIndex][csvHeader.indexOf("Alternatives")].length - 1;
+
+        if (lengthMainIndex !== mainIndex){
+            mainIndex++;
+        } else if (lengthMainIndex === mainIndex && altIndex !== lengthAltIndex){
+            altIndex++;
+        } else if (lengthMainIndex === mainIndex && altIndex === lengthAltIndex){
+            musicIndex++;
+            mainIndex = 0;
+            altIndex = 0;
+        }
+
+        player.loadVideo(workingData[musicIndex][csvHeader.indexOf("Links")])
+    }
 </script>
 <title>SpreadsheetPlayer</title>
 
@@ -116,24 +170,51 @@
     </div>
 
     <div class="card bg-base-200 card-md shadow-sm">
-        <div class="card-body">
+        <div class="card-body flex">
+
             <h2 class="card-title">Music</h2>
-            <div class="w-full h-full bg-amber-800 overflow-y-scroll scroll-auto">
-                <p>...</p>
-                <p>...</p><p>...</p>
-                <p>...</p><p>...</p>
-                 <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p> <p>...</p>
-                <p>...</p>
+            <div class="w-full overflow-y-scroll grow p-2">
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="flex items-center justify-between gap-4">
+                            <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 shrink-0">
+                            <img class="w-12 h-12 rounded object-cover rawimage" src="" alt="Song artwork"/></div><!--Consider https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg-->
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold truncate">Meow</p>
+                                <p class="text-sm text-base-content/70 truncate">Meow · Meow</p>
+                            </div>
+                            </div>
+                            <div class="shrink-0">Notes</div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <fieldset class="fieldset">
-                <legend class="fieldset-legend">Sort by...</legend>
-                <select class="select select-xs w-[25%]">
-                    <option selected>Default</option>
-                    <option>Name</option>
-                    <option>Author</option>
-                    <option>Date</option>
-                </select>                    
-            </fieldset>
+            
+            <div class = "columns-3">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Sort by...</legend>
+                    <select class="select select-xs">
+                        <option selected>Spreadsheet Order</option>
+                        <option>Reverse Spreadsheet Order</option>
+                        <option>Name</option>
+                        <option>Composer</option>
+                        <option>Date</option>
+                        <option>Reverse Date</option>
+                    </select>                    
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Play...</legend>
+                    <select class="select select-xs">
+                        <option selected>All Music</option>
+                        <option>Originals Only</option>
+                        <option>Alternatives Only</option>
+                    </select>                    
+                </fieldset>
+                <div class = "flex items-end h-full">
+                    rats
+                </div>
+            </div>
         </div>
     </div>
 
