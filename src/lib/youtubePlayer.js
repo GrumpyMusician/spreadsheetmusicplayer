@@ -21,8 +21,8 @@ export class youtubePlayer {
         };
     }
 
-    loadVideo(videoURL){
-        this.player.loadVideoByUrl(videoURL, 0);
+    loadVideo(videoID){
+        this.player.loadVideoById(videoID);
     }
 
     playVideo(){

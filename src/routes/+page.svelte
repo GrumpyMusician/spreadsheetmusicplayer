@@ -1,9 +1,10 @@
 <script lang="ts">
     import {youtubePlayer} from "../lib/youtubePlayer.js";
+    import Papa from "papaparse"
 
     let player: youtubePlayer;
 
-    player = new youtubePlayer("player", "vxXEkw8KsQU");
+    player = new youtubePlayer("player", "tnFWgQT0bZQ");
     
     let intervalId;
     let progressbarValue = 0;
@@ -13,11 +14,12 @@
 
     let volumeIcon = "volume_up"
     setTimeout(() => {
-        player.playVideo();
         player.setVolume(100);
+        jumpTo(0, true, 0)
 
         intervalId = setInterval(() => {
             timeTotal = player.getDuration();
+           
             if (ignoreTime){
                 timeElapsed = timeTotal - progressbarValue;
                 player.seekTo(timeElapsed);
@@ -27,13 +29,14 @@
             }
 
             playerState = player.getPlayerState();
-            if (ignoreSound){
+
+            if (ignoreSound || !Number.isNaN(volume)){
                 volume = 100 - soundBarValue;
             } else {
                 volume = player.getVolume();
                 soundBarValue = 100 - volume;
             }
-
+            
             if (volume === 0){
                 volumeIcon = "volume_off"
             } else if (volume <= 33) {
@@ -58,6 +61,15 @@
     let timeTotal = 0;
     let playerState = 0; // 0 = ended, 1 = playing, 2 = paused
     let volume = 0;
+
+    function getBgColor(index: number, trash1:number, trash2:boolean){
+        if (index === currIndex){
+            if (currIsMain){return "bg-linear-to-r from-red-500 to-orange-400"}
+            else {return "bg-linear-to-r from-green-500 to-blue-500"}
+        } else {
+            return "bg-base-100"
+        }
+    }
 
     function secondsToTime(seconds:number) {
         seconds = Math.floor(seconds)
@@ -98,7 +110,6 @@
         }
     }
 
-
     let playPauseIcon = "play_arrow"
     function playPauseToggle(isManual:boolean){
         if (playPauseIcon === "play_arrow"){
@@ -110,91 +121,147 @@
         }
     }
 
-    let csvData: string[][] = [];
-    let csvHeader: string[] = [];
+    type CSVRow = {Id: number; Name: string; Composers: string; Year: number; Links: string[]; Alternatives: string[];};
+    let csvData: CSVRow[] = [{Id: 0, Name: "Twelfth Street Rag", Year: 1914, Composers: "Euday Bowman", Links: ["https://youtu.be/tnFWgQT0bZQ"], Alternatives: ["https://youtu.be/XN3Lvxn3BAU"]}];
+
     function loadCSV(event: Event): void {
         const input = event.target as HTMLInputElement;
-        if (!input.files || input.files.length === 0) return;
+        if (!input?.files?.[0]) return;
+        const file = input.files[0];
 
-        const file: File = input.files[0];
-        const reader = new FileReader();
+        Papa.parse(file, {header: true, skipEmptyLines: true, complete: (results) => {
+            csvData = results.data.map((row: any, index: number): CSVRow => {                
+                const splitSemicolons = (field: string) => 
+                field ? field.split(';').map(s => s.trim()).filter(Boolean) : [];
 
-        reader.onload = () => {
-            const text = reader.result as string;
+                return {Id: index + 1, Name: row['Name']?.trim() ?? "", Composers: row['Composers']?.trim() ?? "", Year: parseInt(row['Year']) || 0, Links: splitSemicolons(row['Links']), Alternatives: splitSemicolons(row['Alternatives'])};
+            });
+            }
+        });
 
-            const rows = text
-                .trim()
-                .split(/\r?\n/)
-                .map(row => row.split(',').map(cell => cell.trim()));
-
-            csvHeader = rows[0];
-            csvData = rows.slice(1);
-
-            musicIndex = 0;
-            mainIndex = 0;
-            altIndex = 0;
-        };
-
-        reader.readAsText(file);
+        setTimeout(() => {jumpTo(0, true, 0)}, 1500);
     }
 
-    let musicIndex = 0;
-    let mainIndex = 0;
-    let altIndex = 0;
+    function onSortChange(event: Event): void {
+        let songId = csvData[currIndex].Id;
+        const sortList = (event.target as HTMLSelectElement).selectedIndex;
 
-    let workingData: string[][] = [];
-    function nextSong(): void {
-        let lengthMainIndex = workingData[musicIndex][csvHeader.indexOf("Links")].length - 1;
-        let lengthAltIndex = workingData[musicIndex][csvHeader.indexOf("Alternatives")].length - 1;
-
-        if (lengthMainIndex !== mainIndex){
-            mainIndex++;
-        } else if (lengthMainIndex === mainIndex && altIndex !== lengthAltIndex){
-            altIndex++;
-        } else if (lengthMainIndex === mainIndex && altIndex === lengthAltIndex){
-            musicIndex++;
-            mainIndex = 0;
-            altIndex = 0;
+        switch (sortList) {
+            case 0:
+            sortCSVData("Id");
+            break;
+        case 1:
+            sortCSVData("Id", true);
+            break;
+        case 2:
+            sortCSVData("Name");
+            break;
+        case 3:
+            sortCSVData("Composers");
+            break;
+        case 4:
+            sortCSVData("Year");
+            break;
+        case 5:
+            sortCSVData("Year", true);
+            break;
         }
 
-        player.loadVideo(workingData[musicIndex][csvHeader.indexOf("Links")])
+        currIndex = csvData.findIndex(item => item.Id === songId);
     }
+
+    function sortCSVData(key: keyof CSVRow, reverse: boolean = false): void {
+        csvData = [...csvData].sort((a, b) => {
+            const av = a[key];
+            const bv = b[key];
+
+            let result = 0;
+
+            if (typeof av === "number" && typeof bv === "number") {
+                result = av - bv;
+            } else {
+                result = String(av).localeCompare(String(bv));
+            }
+
+            return reverse ? -result : result;
+        });
+    }
+
+    let filterPlay = 0; // 0 = All, 1 = Originals Only, 2 = Alternatives Only
+    function onPlayChange(event: Event): void{
+        filterPlay = (event.target as HTMLSelectElement).selectedIndex;
+    }
+
+    let currIndex = 0;
+    let currIsMain = true;
+    let currSubIndex = 0;
+    function playVideo(): void{
+        if (currIsMain){
+            player.loadVideo(toYoutubeId(csvData[currIndex].Links[currSubIndex]));
+        } else {
+            player.loadVideo(toYoutubeId(csvData[currIndex].Alternatives[currSubIndex]));
+        }
+    }
+
+    function jumpTo(index: number, isMain = true, subIndex: number): void{
+        currIndex = index;
+        currIsMain = isMain;
+        currSubIndex = subIndex;
+        playVideo();
+    }
+
+    function next(): void{
+        
+
+        playVideo();
+    }
+
+    function previous(): void{
+        playVideo();
+    }
+
 </script>
 <title>SpreadsheetPlayer</title>
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"/>
 
-<div class="bg-base-300 grid h-screen grid-cols-[4fr_3fr] grid-rows-[1fr_80px] gap-5 p-5">
+<div class="bg-base-300 grid h-screen grid-cols-[2fr_1fr] grid-rows-[1fr_80px] gap-5 p-5">
     <div class="card bg-base-200 card-md shadow-sm p-5">
         <div id="player" class = "rounded"></div>
     </div>
 
     <div class="card bg-base-200 card-md shadow-sm">
-        <div class="card-body flex">
-
+        <div class="card-body h-100">
             <h2 class="card-title">Music</h2>
-            <div class="w-full overflow-y-scroll grow p-2">
-                <div class="card bg-base-100 shadow-sm">
-                    <div class="card-body p-4">
-                        <div class="flex items-center justify-between gap-4">
-                            <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 shrink-0">
-                            <img class="w-12 h-12 rounded object-cover rawimage" src="" alt="Song artwork"/></div><!--Consider https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg-->
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold truncate">Meow</p>
-                                <p class="text-sm text-base-content/70 truncate">Meow · Meow</p>
+            <div class="overflow-y-scroll overflow-x-hidden grow pt-3">
+                {#each csvData as song, i}
+                    <div class="card {getBgColor(i, currIndex, currIsMain)} shadow-sm">
+                        <div class="card-body p-4">
+                            <div class="grid grid-cols-[60px_5fr_max-content] grid-rows-2 w-full">
+                                <div class="row-span-2">
+                                    <img class="w-12 h-12 rounded object-cover rawimage" src="https://img.youtube.com/vi/{toYoutubeId(song.Links[0])}/default.jpg" alt="Song artwork"/>
+                                </div>    
+                                <p class="text-sm font-semibold truncate text-ellipsis pr-1">{song.Name}</p>
+                                <div class="row-span-2 pt-3">
+                                    {#if filterPlay !== 2}{#each song.Links, j}<span class="material-symbols-outlined cursor-pointer -mr-1.5" on:click={() => {jumpTo(i, true, j)}}>music_note</span>{/each}{/if}
+                                    {#if filterPlay !== 1}{#each song.Alternatives, j}<span class="material-symbols-outlined cursor-pointer" on:click={() => {jumpTo(i, false, j)}}>music_note_add</span>{/each}{/if}
+                                    {#if song.Alternatives.length === 0 || filterPlay === 1}<span class="mr-1.5"></span>{/if}
+                                </div>
+                                <p class="text-sm text-base-content/70 truncate text-ellipsis">
+                                    {#if song.Composers}{song.Composers}{/if}
+                                    {#if song.Composers && song.Year && song.Year !== -1}·{/if}
+                                    {#if song.Year && song.Year !== -1}{song.Year}{/if}
+                                </p>
                             </div>
-                            </div>
-                            <div class="shrink-0">Notes</div>
                         </div>
                     </div>
-                </div>
+                    <br/>
+                {/each}
             </div>
-            
-            <div class = "columns-3">
+            <div class = "grid grid-cols-3 gap-2">
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">Sort by...</legend>
-                    <select class="select select-xs">
+                    <select class="select select-xs" on:change={onSortChange}>
                         <option selected>Spreadsheet Order</option>
                         <option>Reverse Spreadsheet Order</option>
                         <option>Name</option>
@@ -205,15 +272,12 @@
                 </fieldset>
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">Play...</legend>
-                    <select class="select select-xs">
+                    <select class="select select-xs" on:change={onPlayChange}>
                         <option selected>All Music</option>
                         <option>Originals Only</option>
                         <option>Alternatives Only</option>
                     </select>                    
                 </fieldset>
-                <div class = "flex items-end h-full">
-                    rats
-                </div>
             </div>
         </div>
     </div>
@@ -223,12 +287,18 @@
             <div>
                 <div class="tooltip" data-tip="Previous Song"><button class="btn"><span class="material-symbols-outlined">skip_previous</span></button></div>
                 <button class="btn" on:click={() => {playPauseToggle(true)}}><span class="material-symbols-outlined">{playPauseIcon}</span></button>
-                <button class="btn"><span class="material-symbols-outlined">skip_next</span></button>
+                <button class="btn" on:click={next}><span class="material-symbols-outlined">skip_next</span></button>
                 <button class="btn"><span class="material-symbols-outlined">repeat</span></button>
             </div>
             <div class = "grid grid-cols-[0px_1fr]">
                 <div class = "text-xs ml-0.5 mt-1">{secondsToTime(timeElapsed)}/{secondsToTime(timeTotal)}</div>
-                <div class = "text-center text-xs mt-1">{"Brandenburg Concerto No. 3 in G major · Johann Sebastian Bach · 1719"}</div>
+                <div class = "text-center text-xs mt-1 truncate text-ellipsis">
+                    {#if csvData[currIndex].Name}{csvData[currIndex].Name}{/if}
+                    {#if csvData[currIndex].Name && csvData[currIndex].Composers}·{/if}
+                    {#if csvData[currIndex].Composers}{csvData[currIndex].Composers}{/if}
+                    {#if csvData[currIndex].Composers && csvData[currIndex].Year && csvData[currIndex].Year !== -1}·{/if}
+                    {#if csvData[currIndex].Year && csvData[currIndex].Year !== -1}{csvData[currIndex].Year}{/if}
+                </div>
                 <input type="range" min="0" max={timeTotal} bind:value={progressbarValue} on:mouseup={() => {ignoreTime = false}} on:mousedown={() => {ignoreTime = true}} class="mt-0.5 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[330.5%] rotate-180 transform translate-x-[30.05%] bg-linear-to-r from-red-500 to-orange-400 [--range-p:0rem] col-span-2"/>
             </div>
             <div>
