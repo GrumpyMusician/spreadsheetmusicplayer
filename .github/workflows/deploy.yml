@@ -1,41 +1,45 @@
-name: Deploy SvelteKit Demo to GitHub Pages
+name: Deploy to Github Pages
 
 on:
   push:
-    branches: [ "main" ]   # deploy on push to main branch
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
+    branches:
+      - main  # change if your default branch is different
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+    steps:
+      # 1. Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
           node-version: 20
-          cache: npm
 
-      - run: npm ci
-      - run: npm run build
-
-      - uses: actions/upload-pages-artifact@v3
+      # 3. Cache dependencies
+      - name: Cache Node modules
+        uses: actions/cache@v3
         with:
-          path: build
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      # 4. Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # 5. Build SvelteKit
+      - name: Build
+        run: npm run build
+
+      # 6. Deploy to GitHub Pages
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v6
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: build  # default output of adapter-static
