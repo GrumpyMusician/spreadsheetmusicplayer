@@ -5,9 +5,9 @@ export default {
   preprocess: preprocess(),
   kit: {
     adapter: adapter({
-      pages: 'build',    // output folder
+      pages: 'build',
       assets: 'build',
-      fallback: null     // optional
+      fallback: null
     }),
     paths: {
       base: process.env.GITHUB_PAGES ? '/spreadsheetmusicplayer' : ''
