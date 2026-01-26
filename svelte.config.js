@@ -1,7 +1,6 @@
 import adapter from '@sveltejs/adapter-static';
 import preprocess from 'svelte-preprocess';
 
-const dev = process.env.NODE_ENV === 'development';
 const ghPages = process.env.GITHUB_PAGES === 'true';
 
 export default {
@@ -14,9 +13,6 @@ export default {
     }),
     paths: {
       base: ghPages ? '/spreadsheetmusicplayer' : ''
-    },
-    prerender: {
-      default: true
     }
   }
 };
