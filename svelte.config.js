@@ -1,13 +1,16 @@
 import adapter from '@sveltejs/adapter-static';
-import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import preprocess from 'svelte-preprocess';
 
-/** @type {import('@sveltejs/kit').Config} */
-const config = {
-	// Consult https://svelte.dev/docs/kit/integrations
-	// for more information about preprocessors
-	preprocess: vitePreprocess(),
-
-	kit: { adapter: adapter() }
+export default {
+  preprocess: preprocess(),
+  kit: {
+    adapter: adapter({
+      pages: 'build',    // output folder
+      assets: 'build',
+      fallback: null     // optional
+    }),
+    paths: {
+      base: process.env.GITHUB_PAGES ? '/spreadsheetmusicplayer' : ''
+    }
+  }
 };
-
-export default config;
