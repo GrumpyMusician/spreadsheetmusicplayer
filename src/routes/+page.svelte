@@ -285,32 +285,64 @@
     function next(isManual = false): void {
         autoScroll();
 
-        if ((repeatIcon === "repeat_one") && !isManual) {
+        if (repeatIcon === "repeat_one" && !isManual) {
             playVideo();
             return;
         }
 
-        const total = csvData.length;
+        const s = csvData[currIndex];
 
+        if (filterPlay === 1 && currSubIndex + 1 < s.Links.length) {
+            currSubIndex++;
+            currIsMain = true;
+            playVideo();
+            return;
+        }
+
+        if (filterPlay === 2 && currSubIndex + 1 < s.Alternatives.length) {
+            currSubIndex++;
+            currIsMain = false;
+            playVideo();
+            return;
+        }
+
+        if (filterPlay === 0) {
+            if (currIsMain && currSubIndex + 1 < s.Links.length) {
+                currSubIndex++;
+                playVideo();
+                return;
+            } else if (currIsMain && s.Alternatives.length > 0) {
+                currIsMain = false;
+                currSubIndex = 0;
+                playVideo();
+                return;
+            } else if (!currIsMain && currSubIndex + 1 < s.Alternatives.length) {
+                currSubIndex++;
+                playVideo();
+                return;
+            }
+        }
+
+        const total = csvData.length;
         for (let offset = 1; offset <= total; offset++) {
             const i = (currIndex + offset) % total;
-            const s = csvData[i];
+            const nextSong = csvData[i];
 
             const matchesSearch =
-                s.Name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                s.Composers.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                s.Year.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+                nextSong.Name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                nextSong.Composers.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                nextSong.Year.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
                 searchQuery === "";
 
             const matchesFilterPlay =
-                (filterPlay === 0 && (s.Links.length > 0 || s.Alternatives.length > 0)) ||
-                (filterPlay === 1 && s.Links.length > 0) ||
-                (filterPlay === 2 && s.Alternatives.length > 0);
+                (filterPlay === 0 && (nextSong.Links.length > 0 || nextSong.Alternatives.length > 0)) ||
+                (filterPlay === 1 && nextSong.Links.length > 0) ||
+                (filterPlay === 2 && nextSong.Alternatives.length > 0);
 
             if (matchesSearch && matchesFilterPlay) {
                 currIndex = i;
                 currSubIndex = 0;
-                currIsMain = !(filterPlay === 2 || s.Links.length === 0);
+                currIsMain = filterPlay === 2 ? false : true;
                 playVideo();
                 return;
             }
@@ -320,27 +352,74 @@
     function previous(): void {
         autoScroll();
 
-        const total = csvData.length;
+        const s = csvData[currIndex];
 
+        if (filterPlay === 1 && currSubIndex > 0) {
+            currSubIndex--;
+            currIsMain = true;
+            playVideo();
+            return;
+        }
+
+        if (filterPlay === 2 && currSubIndex > 0) {
+            currSubIndex--;
+            currIsMain = false;
+            playVideo();
+            return;
+        }
+
+        if (filterPlay === 0) {
+            if (!currIsMain && currSubIndex > 0) {
+                currSubIndex--;
+                playVideo();
+                return;
+            } else if (!currIsMain && s.Links.length > 0) {
+                currIsMain = true;
+                currSubIndex = s.Links.length - 1;
+                playVideo();
+                return;
+            } else if (currIsMain && currSubIndex > 0) {
+                currSubIndex--;
+                playVideo();
+                return;
+            }
+        }
+
+        const total = csvData.length;
         for (let offset = 1; offset <= total; offset++) {
             const i = (currIndex - offset + total) % total;
-            const s = csvData[i];
+            const prevSong = csvData[i];
 
             const matchesSearch =
-                s.Name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                s.Composers.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                s.Year.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+                prevSong.Name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                prevSong.Composers.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                prevSong.Year.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
                 searchQuery === "";
 
             const matchesFilterPlay =
-                (filterPlay === 0 && (s.Links.length > 0 || s.Alternatives.length > 0)) ||
-                (filterPlay === 1 && s.Links.length > 0) ||
-                (filterPlay === 2 && s.Alternatives.length > 0);
+                (filterPlay === 0 && (prevSong.Links.length > 0 || prevSong.Alternatives.length > 0)) ||
+                (filterPlay === 1 && prevSong.Links.length > 0) ||
+                (filterPlay === 2 && prevSong.Alternatives.length > 0);
 
             if (matchesSearch && matchesFilterPlay) {
                 currIndex = i;
-                currSubIndex = 0;
-                currIsMain = !(filterPlay === 2 || s.Links.length === 0);
+
+                if (filterPlay === 1) {
+                    currIsMain = true;
+                    currSubIndex = prevSong.Links.length - 1;
+                } else if (filterPlay === 2) {
+                    currIsMain = false;
+                    currSubIndex = prevSong.Alternatives.length - 1;
+                } else {
+                    if (prevSong.Alternatives.length > 0) {
+                        currIsMain = false;
+                        currSubIndex = prevSong.Alternatives.length - 1;
+                    } else {
+                        currIsMain = true;
+                        currSubIndex = prevSong.Links.length - 1;
+                    }
+                }
+
                 playVideo();
                 return;
             }
