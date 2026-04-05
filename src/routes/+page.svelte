@@ -14,6 +14,8 @@
     let ignoreSound = false;
     let volumeIcon = "volume_up"
 
+    let searchQuery = "";
+
     onMount(() => {
         setTimeout(() => {
             player.setVolume(100);
@@ -191,7 +193,7 @@
     }
 
     type CSVRow = {Id: number; Name: string; Composers: string; Year: number; Links: string[]; Alternatives: string[];};
-    let csvData: CSVRow[] = [{Id: 0, Name: "Twelfth Street Rag", Year: 1914, Composers: "Euday Bowman", Links: ["https://youtu.be/tnFWgQT0bZQ"], Alternatives: ["https://youtu.be/XN3Lvxn3BAU"]}];
+    let csvData: CSVRow[] = [{Id: 0, Name: 'Fugue in G Minor ("The Great")', Year: 1720, Composers: "Johann Sebastian Bach", Links: ["https://youtu.be/4WhPUqpaRp4"], Alternatives: ["https://youtu.be/NOl0ymgnNWo"]}];
 
     function loadCSV(event: Event): void {
         const input = event.target as HTMLInputElement;
@@ -388,7 +390,6 @@
     function autoScroll(): void{
         document.getElementById("song" + currIndex)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-
 </script>
 <title>SpreadsheetPlayer</title>
 
@@ -408,32 +409,38 @@
             <h2 class="card-title">Music</h2>
             <div class="overflow-y-scroll overflow-x-hidden grow pt-3">
                 {#each csvData as song, i}
-                    <div class="card {getBgColor(i, currIndex, currIsMain)} shadow-sm" id = "song{i}">
-                        <div class="card-body p-4">
-                            <div class="grid grid-cols-[60px_5fr_max-content] grid-rows-2 w-full">
-                                <div class="row-span-2">
-                                    <div class = "{blur[2]} w-12 h-12">
-                                        <img class="w-12 h-12 object-cover rawimage rounded {blur[0]}" src="https://img.youtube.com/vi/{toYoutubeId(song.Links[0])}/default.jpg" alt="Song artwork"/>
+                    {#if song.Name.toLowerCase().includes(searchQuery.toLowerCase()) || song.Composers.toLowerCase().includes(searchQuery.toLowerCase()) || song.Year.toString().toLowerCase().includes(searchQuery.toLowerCase()) || searchQuery === ""}
+                        <div class="card {getBgColor(i, currIndex, currIsMain)} shadow-sm" id = "song{i}">
+                            <div class="card-body p-4">
+                                <div class="grid grid-cols-[60px_5fr_max-content] grid-rows-2 w-full">
+                                    <div class="row-span-2">
+                                        <div class = "{blur[2]} w-12 h-12">
+                                            {#if song.Links.length === 0 && song.Alternatives.length !== 0}
+                                                <img class="w-12 h-12 object-cover rawimage rounded {blur[0]}" src="https://img.youtube.com/vi/{toYoutubeId(song.Alternatives[0])}/default.jpg" alt="Song artwork"/>
+                                            {:else}
+                                                <img class="w-12 h-12 object-cover rawimage rounded {blur[0]}" src="https://img.youtube.com/vi/{toYoutubeId(song.Links[0])}/default.jpg" alt="Song artwork"/>
+                                            {/if}
+                                        </div>
                                     </div>
+                                    <p class="text-sm font-semibold truncate text-ellipsis pr-1">{obfuscate(song.Name)}</p>
+                                    <div class="row-span-2 pt-3">
+                                        {#if filterPlay !== 2}{#each song.Links, j}<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions --><span class="material-symbols-outlined cursor-pointer -mr-1.5" on:click={() => {jumpTo(i, true, j)}}>music_note</span>{/each}{/if}
+                                        {#if filterPlay !== 1}{#each song.Alternatives, j}<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions --><span class="material-symbols-outlined cursor-pointer" on:click={() => {jumpTo(i, false, j)}}>music_note_add</span>{/each}{/if}
+                                        {#if song.Alternatives.length === 0 || filterPlay === 1}<span class="mr-1.5"></span>{/if}
+                                    </div>
+                                    <p class="text-sm text-base-content/70 truncate text-ellipsis">
+                                        {#if song.Composers}{obfuscate(song.Composers)}{/if}
+                                        {#if song.Composers && song.Year && song.Year !== -1}·{/if}
+                                        {#if song.Year && song.Year !== -1}{obfuscate(song.Year)}{/if}
+                                    </p>
                                 </div>
-                                <p class="text-sm font-semibold truncate text-ellipsis pr-1">{obfuscate(song.Name)}</p>
-                                <div class="row-span-2 pt-3">
-                                    {#if filterPlay !== 2}{#each song.Links, j}<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions --><span class="material-symbols-outlined cursor-pointer -mr-1.5" on:click={() => {jumpTo(i, true, j)}}>music_note</span>{/each}{/if}
-                                    {#if filterPlay !== 1}{#each song.Alternatives, j}<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions --><span class="material-symbols-outlined cursor-pointer" on:click={() => {jumpTo(i, false, j)}}>music_note_add</span>{/each}{/if}
-                                    {#if song.Alternatives.length === 0 || filterPlay === 1}<span class="mr-1.5"></span>{/if}
-                                </div>
-                                <p class="text-sm text-base-content/70 truncate text-ellipsis">
-                                    {#if song.Composers}{obfuscate(song.Composers)}{/if}
-                                    {#if song.Composers && song.Year && song.Year !== -1}·{/if}
-                                    {#if song.Year && song.Year !== -1}{obfuscate(song.Year)}{/if}
-                                </p>
                             </div>
                         </div>
-                    </div>
-                    <br/>
+                        <br/>
+                    {/if}
                 {/each}
             </div>
-            <div class = "grid grid-cols-3 gap-2">
+            <div class = "grid grid-cols-4 gap-2">
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">Sort by...</legend>
                     <select class="select select-xs" on:change={onSortChange}>
@@ -452,6 +459,10 @@
                         <option>Originals Only</option>
                         <option>Alternatives Only</option>
                     </select>                    
+                </fieldset>
+                <fieldset class = "fieldset col-span-2">
+                    <legend class="fieldset-legend">Search...</legend>
+                    <label class="input select-xs"> <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"> <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor" > <circle cx="11" cy="11" r="8"></circle> <path d="m21 21-4.3-4.3"></path> </g> </svg> <input type="search" class="grow" placeholder="Search" bind:value={searchQuery}/></label>
                 </fieldset>
             </div>
         </div>
