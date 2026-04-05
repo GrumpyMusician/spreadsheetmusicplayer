@@ -283,59 +283,31 @@
     }
 
     function next(isManual = false): void {
-        autoScroll()
+        autoScroll();
 
         if ((repeatIcon === "repeat_one") && !isManual) {
             playVideo();
             return;
         }
 
-        const song = csvData[currIndex];
+        const total = csvData.length;
 
-        if (currIsMain) {
-            if (currSubIndex + 1 < song.Links.length) {
-                currSubIndex++;
-                playVideo();
-                return;
-            }
-            if (filterPlay === 0 && song.Alternatives.length > 0) {
-                currIsMain = false;
-                currSubIndex = 0;
-                playVideo();
-                return;
-            }
-        } else {
-            if (currSubIndex + 1 < song.Alternatives.length) {
-                currSubIndex++;
-                playVideo();
-                return;
-            }
-        }
-
-        for (let i = currIndex + 1; i < csvData.length; i++) {
+        for (let offset = 1; offset <= total; offset++) {
+            const i = (currIndex + offset) % total;
             const s = csvData[i];
 
-            if (
+            const matchesSearch =
+                s.Name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                s.Composers.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                s.Year.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+                searchQuery === "";
+
+            const matchesFilterPlay =
                 (filterPlay === 0 && (s.Links.length > 0 || s.Alternatives.length > 0)) ||
                 (filterPlay === 1 && s.Links.length > 0) ||
-                (filterPlay === 2 && s.Alternatives.length > 0)
-            ) {
-                currIndex = i;
-                currSubIndex = 0;
-                currIsMain = !(filterPlay === 2 || s.Links.length === 0);
-                playVideo();
-                return;
-            }
-        }
+                (filterPlay === 2 && s.Alternatives.length > 0);
 
-        for (let i = 0; i <= currIndex; i++) {
-            const s = csvData[i];
-
-            if (
-                (filterPlay === 0 && (s.Links.length > 0 || s.Alternatives.length > 0)) ||
-                (filterPlay === 1 && s.Links.length > 0) ||
-                (filterPlay === 2 && s.Alternatives.length > 0)
-            ) {
+            if (matchesSearch && matchesFilterPlay) {
                 currIndex = i;
                 currSubIndex = 0;
                 currIsMain = !(filterPlay === 2 || s.Links.length === 0);
@@ -346,41 +318,29 @@
     }
 
     function previous(): void {
-        autoScroll()
+        autoScroll();
 
-        const song = csvData[currIndex];
+        const total = csvData.length;
 
-        if (currSubIndex > 0) {
-            currSubIndex--;
-            playVideo();
-            return;
-        }
-
-        if (!currIsMain && filterPlay === 0 && song.Links.length > 0) {
-            currIsMain = true;
-            currSubIndex = song.Links.length - 1;
-            playVideo();
-            return;
-        }
-
-        for (let i = currIndex - 1; i >= 0; i--) {
+        for (let offset = 1; offset <= total; offset++) {
+            const i = (currIndex - offset + total) % total;
             const s = csvData[i];
 
-            if (
+            const matchesSearch =
+                s.Name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                s.Composers.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                s.Year.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+                searchQuery === "";
+
+            const matchesFilterPlay =
                 (filterPlay === 0 && (s.Links.length > 0 || s.Alternatives.length > 0)) ||
                 (filterPlay === 1 && s.Links.length > 0) ||
-                (filterPlay === 2 && s.Alternatives.length > 0)
-            ) {
+                (filterPlay === 2 && s.Alternatives.length > 0);
+
+            if (matchesSearch && matchesFilterPlay) {
                 currIndex = i;
-
-                if (filterPlay === 2 || s.Links.length === 0) {
-                    currIsMain = false;
-                    currSubIndex = s.Alternatives.length - 1;
-                } else {
-                    currIsMain = true;
-                    currSubIndex = s.Links.length - 1;
-                }
-
+                currSubIndex = 0;
+                currIsMain = !(filterPlay === 2 || s.Links.length === 0);
                 playVideo();
                 return;
             }
