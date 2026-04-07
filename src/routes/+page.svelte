@@ -14,6 +14,10 @@
     let ignoreSound = false;
     let volumeIcon = "volume_up"
 
+    type viewTypes = "Both" | "Video" | "List";
+    let view: viewTypes
+    let isMobile = false;
+
     let searchQuery = "";
 
     onMount(() => {
@@ -25,6 +29,22 @@
                 navigator.mediaSession.setActionHandler("previoustrack", () => {previous();});
                 navigator.mediaSession.setActionHandler("nexttrack", () => {next(true);});
             }
+
+            const media = window.matchMedia("(max-width: 768px)");
+
+            const update = () => {
+                if (media.matches){
+                    view = "Video"
+                } else {
+                    view = "Both"
+                }
+                updateView()
+                isMobile = media.matches;
+            };
+
+            update();
+
+            media.addEventListener("change", update);
 
             intervalId = setInterval(() => {
                 timeTotal = player.getDuration();
@@ -65,6 +85,12 @@
                 } else if (playerState === 0){
                     next();
                 }
+
+                console.log(isMobile)
+
+                return () => {
+                    media.removeEventListener("change", update);
+                };
             }, 50);
         }, 2000);
     });
@@ -151,7 +177,7 @@
         }
     }
 
-    const byakuzhiMap = { "ch": "ㄔ", "sh": "ㄕ", "th": "ㄘ", "ng": "ㄫ", "b": "ㄅ", "c": "ㄠ", "d": "ㄉ", "f": "ㄈ", "g": "ㄍ", "h": "ㄏ", "j": "ㄐ", "k": "ㄎ", "l": "ㄌ", "m": "ㄇ", "n": "ㄓ", "p": "ㄆ", "q": "ㄩ", "r": "ㄖ", "s": "ㄙ", "t": "ㄊ", "v": "ㄪ", "w": "ㄨ", "x": "ㆲ", "y": "ㄬ", "z": "ㄗ", "a": "ㄡ", "e": "ㄝ", "i": "ㄧ", "o": "ㄛ", "u": "ㄦ", "0": "ロ", "1": "チ", "2": "ニ", "3": "サ", "4": "シ", "5": "ヨ", "6": "ク", "7": "ナ", "8": "ハ", "9": "ウ", " ": "", ".": "。", ",": "，", "!": "！", "?": "？", ";": "；", ":": "：", "(": "（", ")": "）", "[": "［", "]": "］", "~": "～", "@": "＠", "+": "＋", "-": "－", "*": "＊", "/": "／", "\\": "＼", "|": "｜", "_": "＿", "=": "＝", "<": "＜", ">": "＞", "#": "＃", "$": "＄", "%": "％", "&": "＆", "^": "＾", "`": "｀", "{": "｛", "}": "｝", "\"": "＂",  "'":  "＇"};
+    const bopomofomap  = { "ch": "ㄔ", "sh": "ㄕ", "th": "ㄘ", "ng": "ㄫ", "b": "ㄅ", "c": "ㄠ", "d": "ㄉ", "f": "ㄈ", "g": "ㄍ", "h": "ㄏ", "j": "ㄐ", "k": "ㄎ", "l": "ㄌ", "m": "ㄇ", "n": "ㄓ", "p": "ㄆ", "q": "ㄩ", "r": "ㄖ", "s": "ㄙ", "t": "ㄊ", "v": "ㄪ", "w": "ㄨ", "x": "ㆲ", "y": "ㄬ", "z": "ㄗ", "a": "ㄡ", "e": "ㄝ", "i": "ㄧ", "o": "ㄛ", "u": "ㄦ", "0": "ロ", "1": "チ", "2": "ニ", "3": "サ", "4": "シ", "5": "ヨ", "6": "ク", "7": "ナ", "8": "ハ", "9": "ウ", " ": "", ".": "。", ",": "，", "!": "！", "?": "？", ";": "；", ":": "：", "(": "（", ")": "）", "[": "［", "]": "］", "~": "～", "@": "＠", "+": "＋", "-": "－", "*": "＊", "/": "／", "\\": "＼", "|": "｜", "_": "＿", "=": "＝", "<": "＜", ">": "＞", "#": "＃", "$": "＄", "%": "％", "&": "＆", "^": "＾", "`": "｀", "{": "｛", "}": "｝", "\"": "＂",  "'":  "＇"};
     let blur = ["", "", ""]
     function obfuscate(text: string | number): string {
         if (visibilityIcon === "visibility") {
@@ -161,7 +187,7 @@
         
         blur = ["blur-xs", "blur-3xl", "overflow-hidden rounded"]
 
-        const map = byakuzhiMap as Record<string, string>;
+        const map = bopomofomap as Record<string, string>;
         const mapValues = Object.values(map);
 
         text = String(text).toLowerCase();
@@ -429,13 +455,54 @@
     function autoScroll(): void{
         document.getElementById("song" + currIndex)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+
+    function switchLayout(): void{
+        if(view === "Both"){
+            view = "Video"
+        } else if (view === "Video"){
+            view = "List"
+        } else {
+            if (isMobile){
+                view = "Video"
+            } else {
+                view = "Both"
+            }
+        }
+
+        updateView()
+    }
+
+    let videoStyle = ""
+    let listStyle = ""
+    let bottomStyle = "grid-rows-[1fr_80px]"
+    let drawerStyle = "grid-cols-[242px_1fr_242px]"
+    function updateView(): void{
+        if (view === "Both"){
+            videoStyle = ""
+            listStyle = ""
+        } else if (view === "Video") {
+            videoStyle = "col-span-2"
+            listStyle = "hidden"
+        } else if (view === "List") {
+            videoStyle = "hidden"
+            listStyle = "col-span-2"
+        }
+
+        if (isMobile){
+            bottomStyle = "grid-rows-[1fr_80px]"
+            drawerStyle = "grid-cols-[242px_1fr_242px]"
+        } else {
+            bottomStyle = "grid-rows-[1fr_200px]"
+            drawerStyle = ""
+        }
+    }
 </script>
 <title>SpreadsheetPlayer</title>
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"/>
 
-<div class="bg-base-300 grid h-screen grid-cols-[2fr_1fr] grid-rows-[1fr_80px] gap-5 p-5">
-    <div class="card bg-base-200 card-md shadow-sm p-5">
+<div class="bg-base-300 grid h-screen grid-cols-[2fr_1fr] {bottomStyle} gap-5 p-5">
+    <div class= "card bg-base-200 card-md shadow-sm p-5 {videoStyle}">
         <div class = "{blur[2]} h-full">
             <div class = "{blur[1]} h-full">
                 <div id="player" class = "rounded"></div>
@@ -443,7 +510,7 @@
         </div>
     </div>
 
-    <div class="card bg-base-200 card-md shadow-sm">
+    <div class="card bg-base-200 card-md shadow-sm {listStyle}">
         <div class="card-body h-100">
             <h2 class="card-title">Music</h2>
             <div class="overflow-y-scroll overflow-x-hidden grow pt-3">
@@ -508,8 +575,8 @@
     </div>
 
     <div class="card bg-base-200 card-md shadow-sm col-span-2">
-        <div class="card-body grid grid-cols-[242px_1fr_242px] gap-5 p-5">
-            <div>
+        <div class="card-body {drawerStyle} grid gap-5 p-5">
+            <div class = "mx-auto">
                 <button class="btn" on:click={previous}><span class="material-symbols-outlined">skip_previous</span></button>
                 <button class="btn" on:click={() => {playPauseToggle(true)}}><span class="material-symbols-outlined">{playPauseIcon}</span></button>
                 <button class="btn" on:click={() => {next(true)}}><span class="material-symbols-outlined">skip_next</span></button>
@@ -517,24 +584,24 @@
             </div>
             <div class = "grid grid-cols-[0px_1fr]">
                 <div class = "text-xs ml-0.5 mt-1">{secondsToTime(timeElapsed)}/{secondsToTime(timeTotal)}</div>
-                <div class = "text-center text-xs mt-1 truncate text-ellipsis">
+                <div class = "ml-18 text-center text-xs mt-1 truncate text-ellipsis">
                     {#if csvData[currIndex].Name}{obfuscate(csvData[currIndex].Name)}{/if}
                     {#if csvData[currIndex].Name && csvData[currIndex].Composers}·{/if}
                     {#if csvData[currIndex].Composers}{obfuscate(csvData[currIndex].Composers)}{/if}
                     {#if csvData[currIndex].Composers && csvData[currIndex].Year && csvData[currIndex].Year !== -1}·{/if}
                     {#if csvData[currIndex].Year && csvData[currIndex].Year !== -1}{obfuscate(csvData[currIndex].Year)}{/if}
                 </div>
-                <input type="range" min="0" max={timeTotal} bind:value={progressbarValue} on:mouseup={() => {ignoreTime = false}} on:mousedown={() => {ignoreTime = true}} class="mt-0.5 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[330.5%] rotate-180 transform translate-x-[30.05%] bg-linear-to-r from-red-500 to-orange-400 [--range-p:0rem] col-span-2"/>
+                <input type="range" min="0" max={timeTotal} bind:value={progressbarValue} on:pointerup={() => {ignoreTime = false}} on:pointerdown={() => {ignoreTime = true}} class="mt-0.5 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[330.5%] rotate-180 transform translate-x-[30.05%] bg-linear-to-r from-red-500 to-orange-400 [--range-p:0rem] col-span-2"/>
             </div>
-            <div>
+            <div class = "mx-auto">
                 <div class="dropdown dropdown-top dropdown-center">
                     <div tabindex="0" role="button" class="btn"><span id = "toggleableVolume" class="material-symbols-outlined">{volumeIcon}</span></div>
-                    <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 shadow-sm mb-2.5 p-3">
+                    <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-1 w-32 shadow-sm mb-2.5 p-3"><!--52-->
                         <li class = "text-center w-full">{volume}%</li>
-                        <input type="range" bind:value={soundBarValue} on:mouseup={() => {ignoreSound = false}} on:mousedown={() => {ignoreSound = true}} class="m-1 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[318%] rotate-180 transform translate-x-[30.05%] bg-linear-to-r from-green-500 to-blue-500 [--range-p:0rem]"/>
+                        <input type="range" bind:value={soundBarValue} on:pointerup={() => {ignoreSound = false}} on:pointerdown={() => {ignoreSound = true}} class="m-1 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[318%] rotate-180 transform translate-x-[30.05%] bg-linear-to-r from-green-500 to-blue-500 [--range-p:0rem]"/>
                     </ul>
                 </div>
-                <button class="btn"><span id = "toggleableRepeat" class="material-symbols-outlined">swap_horiz</span></button>
+                <button class="btn" on:click = {switchLayout}><span id = "toggleableRepeat" class="material-symbols-outlined">swap_horiz</span></button>
                 <button class="btn" on:click = {visibilityToggle}><span id = "toggleableVisibility" class="material-symbols-outlined">{visibilityIcon}</span></button>
                 <button class="btn">
                     <input id="csvInput" type="file" class = "hidden" accept=".csv" on:change = {loadCSV}/>
