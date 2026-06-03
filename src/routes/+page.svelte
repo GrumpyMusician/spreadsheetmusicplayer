@@ -22,6 +22,7 @@
     onMount(() => {
         setLayout(false)
         setTimeout(() => {
+        
             player.setVolume(100);
             jumpTo(0, true, 0)
 
@@ -31,7 +32,7 @@
             }
 
             intervalId = setInterval(() => {
-                console.log(innerWidth.current)
+                console.log(rowConfig)
                 timeTotal = player.getDuration();
             
                 if (!ignoreTime) {
@@ -463,7 +464,7 @@
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"/>
 
-<div class="bg-base-300 grid h-screen grid-cols-[2fr_1fr] grid-rows-[1fr_{rowConfig[0]}px] gap-5 p-5">
+<div class="bg-base-300 grid h-screen grid-cols-[2fr_1fr] gap-5 p-5" style="grid-template-rows: 1fr {rowConfig[0]}px;" >
     <div class="card bg-base-200 card-md shadow-sm p-5 col-span-{columnConfig[0]} {columnConfig[2]}">
         <div class = "{blur[2]} h-full">
             <div class = "{blur[1]} h-full">
