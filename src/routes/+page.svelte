@@ -1,7 +1,9 @@
 <script lang="ts">
     import {youtubePlayer} from "../lib/youtubePlayer.js";
-    import { onMount } from 'svelte';
+    import {onMount} from 'svelte';
     import Papa from "papaparse"
+    import {innerWidth} from 'svelte/reactivity/window';
+
 
     let player: youtubePlayer;
 
@@ -13,10 +15,12 @@
     let soundBarValue = 0;
     let ignoreSound = false;
     let volumeIcon = "volume_up"
-
     let searchQuery = "";
+    let columnConfig = [1, 1, "", ""]
+    let rowConfig = [80, "grid-cols-[243px_1fr_243px]"]
 
     onMount(() => {
+        setLayout(false)
         setTimeout(() => {
             player.setVolume(100);
             jumpTo(0, true, 0)
@@ -27,6 +31,7 @@
             }
 
             intervalId = setInterval(() => {
+                console.log(innerWidth.current)
                 timeTotal = player.getDuration();
             
                 if (ignoreTime){
@@ -73,6 +78,34 @@
     let timeTotal = 0;
     let playerState = 0; // 0 = ended, 1 = playing, 2 = paused
     let volume = 0;
+
+    function setLayout(isToggle: boolean){
+        if (innerWidth.current !== undefined && innerWidth.current <= 700){
+            rowConfig = [200, ""]
+        } else {
+            rowConfig = [80, "grid-cols-[243px_1fr_243px]"]
+        }
+
+        if (!isToggle) {
+            if (innerWidth.current !== undefined && innerWidth.current <= 700){
+                columnConfig = [0, 2, "hidden", ""]
+            } else {
+                columnConfig = [1, 1, "", ""]
+            }
+        } else {
+            if (columnConfig[0] === 1){
+                columnConfig = [2, 0, "", "hidden"]
+            } else if (columnConfig[0] === 2){
+                columnConfig = [0, 2, "hidden", ""]
+            } else if (columnConfig[0] === 0){
+                if (innerWidth.current !== undefined && innerWidth.current <= 700){
+                    columnConfig = [2, 0, "", "hidden"]
+                } else {
+                    columnConfig = [1, 1, "", ""]
+                }
+            }
+        }
+    }
 
     function getBgColor(index: number, trash1:number, trash2:boolean){
         if (index === currIndex){
@@ -419,7 +452,6 @@
                         currSubIndex = prevSong.Links.length - 1;
                     }
                 }
-
                 playVideo();
                 return;
             }
@@ -434,17 +466,16 @@
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"/>
 
-<div class="bg-base-300 grid h-screen grid-cols-[2fr_1fr] grid-rows-[1fr_80px] gap-5 p-5">
-    <div class="card bg-base-200 card-md shadow-sm p-5">
+<div class="bg-base-300 grid h-screen grid-cols-[2fr_1fr] grid-rows-[1fr_{rowConfig[0]}px] gap-5 p-5">
+    <div class="card bg-base-200 card-md shadow-sm p-5 col-span-{columnConfig[0]} {columnConfig[2]}">
         <div class = "{blur[2]} h-full">
             <div class = "{blur[1]} h-full">
                 <div id="player" class = "rounded"></div>
             </div>
         </div>
     </div>
-
-    <div class="card bg-base-200 card-md shadow-sm">
-        <div class="card-body h-100">
+    <div class="card bg-base-200 card-md shadow-sm col-span-{columnConfig[1]} {columnConfig[3]}">
+        <div class="card-body h-0">
             <h2 class="card-title">Music</h2>
             <div class="overflow-y-scroll overflow-x-hidden grow pt-3">
                 {#each csvData as song, i}
@@ -508,33 +539,33 @@
     </div>
 
     <div class="card bg-base-200 card-md shadow-sm col-span-2">
-        <div class="card-body grid grid-cols-[242px_1fr_242px] gap-5 p-5">
-            <div>
+        <div class="card-body grid {rowConfig[1]} gap-5 p-5">
+            <div class = "text-center">
                 <button class="btn" on:click={previous}><span class="material-symbols-outlined">skip_previous</span></button>
                 <button class="btn" on:click={() => {playPauseToggle(true)}}><span class="material-symbols-outlined">{playPauseIcon}</span></button>
                 <button class="btn" on:click={() => {next(true)}}><span class="material-symbols-outlined">skip_next</span></button>
                 <button class="btn" on:click={repeatToggle}><span class="material-symbols-outlined">{repeatIcon}</span></button>
             </div>
             <div class = "grid grid-cols-[0px_1fr]">
-                <div class = "text-xs ml-0.5 mt-1">{secondsToTime(timeElapsed)}/{secondsToTime(timeTotal)}</div>
-                <div class = "text-center text-xs mt-1 truncate text-ellipsis">
+                <div class = "text-xs pl-0.5 mt-1">{secondsToTime(timeElapsed)}/{secondsToTime(timeTotal)}</div>
+                <div class = "text-center text-xs ml-18 mt-1 truncate text-ellipsis">
                     {#if csvData[currIndex].Name}{obfuscate(csvData[currIndex].Name)}{/if}
                     {#if csvData[currIndex].Name && csvData[currIndex].Composers}·{/if}
                     {#if csvData[currIndex].Composers}{obfuscate(csvData[currIndex].Composers)}{/if}
                     {#if csvData[currIndex].Composers && csvData[currIndex].Year && csvData[currIndex].Year !== -1}·{/if}
                     {#if csvData[currIndex].Year && csvData[currIndex].Year !== -1}{obfuscate(csvData[currIndex].Year)}{/if}
                 </div>
-                <input type="range" min="0" max={timeTotal} bind:value={progressbarValue} on:mouseup={() => {ignoreTime = false}} on:mousedown={() => {ignoreTime = true}} class="mt-0.5 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[330.5%] rotate-180 transform translate-x-[30.05%] bg-linear-to-r from-red-500 to-orange-400 [--range-p:0rem] col-span-2"/>
+                <input type="range" min="0" max={timeTotal} bind:value={progressbarValue} on:pointerup={() => {ignoreTime = false; player.pauseVideo();}} on:pointerdown={() => {ignoreTime = true;  player.playVideo();}} class="mt-0.5 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[330.5%] rotate-180 transform translate-x-[30.05%] [--range-p:0rem] col-span-2" style:background={`linear-gradient( to right, #323841 0%, #323841 ${100 - (timeElapsed / timeTotal) * 100}%, #fb923c ${100 - (timeElapsed / timeTotal) * 100}%, #ef4444 100% )`}/>
             </div>
-            <div>
+            <div class = "text-center">
                 <div class="dropdown dropdown-top dropdown-center">
                     <div tabindex="0" role="button" class="btn"><span id = "toggleableVolume" class="material-symbols-outlined">{volumeIcon}</span></div>
                     <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 shadow-sm mb-2.5 p-3">
                         <li class = "text-center w-full">{volume}%</li>
-                        <input type="range" bind:value={soundBarValue} on:mouseup={() => {ignoreSound = false}} on:mousedown={() => {ignoreSound = true}} class="m-1 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[318%] rotate-180 transform translate-x-[30.05%] bg-linear-to-r from-green-500 to-blue-500 [--range-p:0rem]"/>
+                        <input type="range" bind:value={soundBarValue} on:pointerup={() => {ignoreSound = false}} on:pointerdown={() => {ignoreSound = true}} class="m-1 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[318%] rotate-180 transform translate-x-[30.05%] bg-linear-to-r from-green-500 to-blue-500 [--range-p:0rem]"/>
                     </ul>
                 </div>
-                <button class="btn"><span id = "toggleableRepeat" class="material-symbols-outlined">swap_horiz</span></button>
+                <button class="btn" on:click = {() => {setLayout(true)}}><span id = "toggleableRepeat" class="material-symbols-outlined">swap_horiz</span></button>
                 <button class="btn" on:click = {visibilityToggle}><span id = "toggleableVisibility" class="material-symbols-outlined">{visibilityIcon}</span></button>
                 <button class="btn">
                     <input id="csvInput" type="file" class = "hidden" accept=".csv" on:change = {loadCSV}/>
@@ -546,3 +577,5 @@
         </div>
     </div>
 </div>
+
+<svelte:window onresize={() => {setLayout(false)}}/>
