@@ -223,7 +223,7 @@
     }
 
     type CSVRow = {Id: number; Name: string; Composers: string; Year: number; Links: string[]; Alternatives: string[];};
-    let csvData: CSVRow[] = [{Id: 0, Name: 'Fugue in G Minor ("The Great")', Year: 1720, Composers: "Johann Sebastian Bach", Links: ["https://youtu.be/4WhPUqpaRp4"], Alternatives: ["https://youtu.be/NOl0ymgnNWo"]}];
+    let csvData: CSVRow[] = [{Id: 0, Name: 'Fugue in G Minor ("Great")', Year: 1720, Composers: "Johann Sebastian Bach", Links: ["https://youtu.be/4WhPUqpaRp4"], Alternatives: ["https://youtu.be/NOl0ymgnNWo"]}];
 
     function loadCSV(event: Event): void {
         const input = event.target as HTMLInputElement;
