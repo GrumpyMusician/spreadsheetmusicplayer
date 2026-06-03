@@ -34,10 +34,7 @@
                 console.log(innerWidth.current)
                 timeTotal = player.getDuration();
             
-                if (ignoreTime){
-                    timeElapsed = timeTotal - progressbarValue;
-                    player.seekTo(timeElapsed);
-                } else {
+                if (!ignoreTime) {
                     timeElapsed = player.getCurrentTime();
                     progressbarValue = timeTotal - timeElapsed;
                 }
@@ -555,7 +552,7 @@
                     {#if csvData[currIndex].Composers && csvData[currIndex].Year && csvData[currIndex].Year !== -1}·{/if}
                     {#if csvData[currIndex].Year && csvData[currIndex].Year !== -1}{obfuscate(csvData[currIndex].Year)}{/if}
                 </div>
-                <input type="range" min="0" max={timeTotal} bind:value={progressbarValue} on:pointerup={() => {ignoreTime = false; player.pauseVideo();}} on:pointerdown={() => {ignoreTime = true;  player.playVideo();}} class="mt-0.5 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[330.5%] rotate-180 transform translate-x-[30.05%] [--range-p:0rem] col-span-2" style:background={`linear-gradient( to right, #323841 0%, #323841 ${100 - (timeElapsed / timeTotal) * 100}%, #fb923c ${100 - (timeElapsed / timeTotal) * 100}%, #ef4444 100% )`}/>
+                <input type="range" min="0" max={timeTotal} bind:value={progressbarValue} on:input={() => {ignoreTime = true; player.seekTo(timeTotal - progressbarValue);}} on:pointerup={() => {ignoreTime = false}} on:touchend={() => {ignoreTime = false}} class="mt-0.5 leading-none range range-xs origin-left range-neutral [--color-neutral:#323841] [--range-thumb:white] [--range-bg:transparent] scale-30 w-[330.5%] rotate-180 transform translate-x-[30.05%] [--range-p:0rem] col-span-2" style:background={`linear-gradient( to right, #323841 0%, #323841 ${(progressbarValue / timeTotal) * 100}%, #fb923c ${(progressbarValue / timeTotal) * 100}%, #ef4444 100% )`}/>
             </div>
             <div class = "text-center">
                 <div class="dropdown dropdown-top dropdown-center">
